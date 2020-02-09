@@ -1,6 +1,5 @@
 #
-#   Darknet Tiny YOLOv3-tiny model
-#   Copyright EAVISE
+#   Darknet Tiny YOLOv3 model
 #
 
 from collections import OrderedDict, Iterable
@@ -39,7 +38,7 @@ class TinyYoloV3(lnn.module.Darknet):
 	
     """
 
-    def __init__(self, num_classes=30, input_channels=3, anchors=[[(93, 93), (155, 155), (400, 400)], [(11, 11), (27,27), (42, 42)]]):
+    def __init__(self, num_classes=20, input_channels=3, anchors=[[(93, 93), (155, 155), (400, 400)], [(11, 11), (27,27), (42, 42)]]):
 
         super().__init__()
         if not isinstance(anchors, Iterable) and not isinstance(anchors[0], Iterable) and not isinstance(anchors[0][0], Iterable):
@@ -54,7 +53,7 @@ class TinyYoloV3(lnn.module.Darknet):
 
         # Network
 
-        self.extractor = lnn.layer.ModuleList(
+        self.extractor = nn.ModuleList([
             # Sequence 0 : input = input_channels
             nn.Sequential(
                 OrderedDict([
@@ -78,16 +77,16 @@ class TinyYoloV3(lnn.module.Darknet):
                     ('12_maxpool', nn.MaxPool2d(2, 1)),
                     ('13_convbatch', lnn.layer.Conv2dBatchReLU(512, 1024, 3, 1, 1)),
                 ])
-            )
-        )
+            ),
+        ])
 
-        self.detector = nn.ModuleList(
+        self.detector = nn.ModuleList([
             # Sequence 0 : input = extractor (13_convbatch)
             nn.Sequential(
                 OrderedDict([
                     ('14_convbatch', lnn.layer.Conv2dBatchReLU(1024, 256, 1, 1, 1)),
                     ('15_convbatch', lnn.layer.Conv2dBatchReLU(256, 512, 3, 1, 1)),
-                    ('16_convbatch', lnn.layer.Conv2dBatchReLU(512, 255, 1, 1, 1, relu=nn.Linear)),
+                    ('16_convbatch', lnn.layer.Conv2dBatchReLU(512, 255, 1, 1, 1)),
                     ('17_yolo', nn.Conv2d(255,len(self.anchors[0])*(5+self.num_classes),1,1,0)),
                 ])
             ),
@@ -107,8 +106,8 @@ class TinyYoloV3(lnn.module.Darknet):
                     ('21_convbatch', lnn.layer.Conv2dBatchReLU(256, 255, 1, 1, 1)),
                     ('22_yolo', nn.Conv2d(255,len(self.anchors[1])*(5+self.num_classes),1,1,0)),
                 ])
-            )
-        )
+            ),
+        ])
 
     def forward(self,x):
         out = [None,None]
