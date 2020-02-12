@@ -33,9 +33,9 @@ class TrainEngine(ln.engine.Engine):
         #print(self.network)
         print(target.shape)
         out = self.network(data)
-        print(out[0].shape)
-        print(out[1].shape)
-        loss = (self.loss(out[0], target) + self.loss(out[1], target)) / self.batch_subdivisions
+        print(out.shape)
+        #loss = (self.loss(out[0], target) + self.loss(out[1], target)) / self.batch_subdivisions
+        loss = self.loss(out, target) / self.batch_subdivisions
         loss.backward()
 
         self.train_loss['tot'].append(self.loss.loss_tot.item())

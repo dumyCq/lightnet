@@ -6,9 +6,16 @@ from collections import OrderedDict, Iterable
 import torch
 import torch.nn as nn
 import lightnet.network as lnn
+import torch.nn.functional as F
 
 __all__ = ['TinyYoloV3']
+class MaxPoolAsymmetricStride(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+    def forward(self,x):
+        out = F.max_pool2d(F.pad(x, [0,1,0,1], mode='replicate'), 2, stride=1)
+        return out
 
 class TinyYoloV3(lnn.module.Darknet):
     """ Tiny Yolo v3 implementation :cite:`yolo_v3`.
@@ -38,7 +45,7 @@ class TinyYoloV3(lnn.module.Darknet):
 	
     """
 
-    def __init__(self, num_classes=20, input_channels=3, anchors=[[(93, 93), (155, 155), (400, 400)], [(11, 11), (27,27), (42, 42)]]):
+    def __init__(self, num_classes=20, input_channels=3, anchors=[[(81, 82), (135, 169), (344, 319)], [(10, 14), (23,27), (37, 58)]]):
 
         super().__init__()
         if not isinstance(anchors, Iterable) and not isinstance(anchors[0], Iterable) and not isinstance(anchors[0][0], Iterable):
@@ -52,7 +59,6 @@ class TinyYoloV3(lnn.module.Darknet):
             self.anchors.append([(a[0] / s, a[1] / s) for a in anchors[i]])
 
         # Network
-
         self.extractor = nn.ModuleList([
             # Sequence 0 : input = input_channels
             nn.Sequential(
@@ -65,36 +71,36 @@ class TinyYoloV3(lnn.module.Darknet):
                     ('6_maxpool', nn.MaxPool2d(2, 2)),
                     ('7_convbatch', lnn.layer.Conv2dBatchReLU(64, 128, 3, 1, 1)),
                     ('8_maxpool', nn.MaxPool2d(2, 2)),
+                    ('9_convbatch', lnn.layer.Conv2dBatchReLU(128, 256, 3, 1, 0)),
                 ])
             ),
 
-            # Sequence 1 : input = 8_maxpool
+            # Sequence 1 : input = 9_convbatch
             nn.Sequential(
                 OrderedDict([
-                    ('9_convbatch', lnn.layer.Conv2dBatchReLU(128, 256, 3, 1, 1)),
                     ('10_maxpool', nn.MaxPool2d(2, 2)),
                     ('11_convbatch', lnn.layer.Conv2dBatchReLU(256, 512, 3, 1, 1)),
-                    ('12_maxpool', nn.MaxPool2d(2, 1)),
+                    ('12_maxpool', MaxPoolAsymmetricStride()),
                     ('13_convbatch', lnn.layer.Conv2dBatchReLU(512, 1024, 3, 1, 1)),
+                    ('14_convbatch', lnn.layer.Conv2dBatchReLU(1024, 256, 1, 1, 0)),
                 ])
             ),
         ])
 
         self.detector = nn.ModuleList([
-            # Sequence 0 : input = extractor (13_convbatch)
+            # Sequence 0 : input = 14_convbatch
             nn.Sequential(
                 OrderedDict([
-                    ('14_convbatch', lnn.layer.Conv2dBatchReLU(1024, 256, 1, 1, 1)),
                     ('15_convbatch', lnn.layer.Conv2dBatchReLU(256, 512, 3, 1, 1)),
-                    ('16_convbatch', lnn.layer.Conv2dBatchReLU(512, 255, 1, 1, 1)),
+                    ('16_convbatch', lnn.layer.Conv2dBatchReLU(512, 255, 1, 1, 1, relu=lambda: nn.Identity())),
                     ('17_yolo', nn.Conv2d(255,len(self.anchors[0])*(5+self.num_classes),1,1,0)),
                 ])
             ),
 
-            # Sequence 1 : input = 13_convbatch
+            # Sequence 1 : input = 14_convbatch
             nn.Sequential(
                 OrderedDict([
-                    ('18_convbatch', lnn.layer.Conv2dBatchReLU(1024,128,1,1,1)),
+                    ('18_convbatch', lnn.layer.Conv2dBatchReLU(256, 128, 1, 1, 0)),
                     ('19_upsample', nn.Upsample(scale_factor=2,mode='nearest')),
                 ])
             ),
@@ -102,8 +108,8 @@ class TinyYoloV3(lnn.module.Darknet):
             #sequence 2 : input = 19_upsample + 8_maxpool
             nn.Sequential(
                 OrderedDict([
-                    ('20_convbatch', lnn.layer.Conv2dBatchReLU(128+128,256,3,1,1)),
-                    ('21_convbatch', lnn.layer.Conv2dBatchReLU(256, 255, 1, 1, 1)),
+                    ('20_convbatch', lnn.layer.Conv2dBatchReLU(128+256, 256, 3, 1, 1)),
+                    ('21_convbatch', lnn.layer.Conv2dBatchReLU(256, 255, 1, 1, 1, relu=lambda: nn.Identity())),
                     ('22_yolo', nn.Conv2d(255,len(self.anchors[1])*(5+self.num_classes),1,1,0)),
                 ])
             ),
@@ -111,7 +117,6 @@ class TinyYoloV3(lnn.module.Darknet):
 
     def forward(self,x):
         out = [None,None]
-
         # Feature extractor
         inter_features_0 = self.extractor[0](x) # 8_maxpool
         inter_features_1 = self.extractor[1](inter_features_0) # 13_convbatch
@@ -121,6 +126,6 @@ class TinyYoloV3(lnn.module.Darknet):
 
         #detector 1
         extra_features = self.detector[1](inter_features_1) # 19_upsample
-        out[1] = self.detector[2](torch.cat(extra_features,inter_features_0)) # 22_yolo
+        out[1] = self.detector[2](torch.cat((extra_features,inter_features_0),1)) # 22_yolo
 
         return out
