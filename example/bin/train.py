@@ -29,13 +29,11 @@ class TrainEngine(ln.engine.Engine):
         data, target = data
         data = data.to(self.device)
 
-        #print(data.shape)
-        #print(self.network)
-        print(target.shape)
         out = self.network(data)
         print(out[0].shape)
         print(out[1].shape)
-        loss = (self.loss(out[0], target) + self.loss(out[1], target)) / self.batch_subdivisions
+        print(self.batch_subdivisions)
+        loss = self.loss(out, target) / self.batch_subdivisions
         loss.backward()
 
         self.train_loss['tot'].append(self.loss.loss_tot.item())
@@ -143,7 +141,7 @@ if __name__ == '__main__':
         batch_size = params.mini_batch_size,
         shuffle = True,
         drop_last = True,
-        num_workers = 8,
+        num_workers = 4,
         pin_memory = True,
         collate_fn = ln.data.brambox_collate,
     )

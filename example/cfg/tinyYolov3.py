@@ -34,7 +34,7 @@ params.network = ln.models.TinyYoloV3(len(params.class_label_map))
 params.network.apply(init_weights)
 
 # Loss
-params.loss = ln.network.loss.RegionLoss(
+params.loss = ln.network.loss.MultiScaleRegionLoss(
     len(params.class_label_map),
     params.network.anchors,
     params.network.stride,
@@ -42,10 +42,10 @@ params.loss = ln.network.loss.RegionLoss(
 
 # Postprocessing
 params._post = ln.data.transform.Compose([
-    ln.data.transform.GetBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.001),
+    ln.data.transform.GetMultiScaleBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.0001),
     ln.data.transform.NonMaxSuppression(0.5),
     ln.data.transform.TensorToBrambox(params.input_dimension, params.class_label_map),
-])
+]) 
 
 # Optimizer
 params.optimizer = torch.optim.SGD(

@@ -45,7 +45,7 @@ class TinyYoloV3(lnn.module.Darknet):
 	
     """
 
-    def __init__(self, num_classes=20, input_channels=3, anchors=[[(81, 82), (135, 169), (344, 319)], [(10, 14), (23,27), (37, 58)]]):
+    def __init__(self, num_classes=20, input_channels=3, anchors=[[(93, 93), (155, 155), (400, 400)], [(12, 12), (28,28), (43, 43)]]):
 
         super().__init__()
         if not isinstance(anchors, Iterable) and not isinstance(anchors[0], Iterable) and not isinstance(anchors[0][0], Iterable):
