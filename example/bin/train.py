@@ -32,16 +32,16 @@ class TrainEngine(ln.engine.Engine):
         out = self.network(data)
         #print(target)
         loss = self.loss(out, target) / self.batch_subdivisions
-        print('This is average loss')
-        print(loss)
+        #print('This is average loss')
+        #print(loss)
 
         if loss.item() == 0:
             print('This one can not be used')
             print()
         else:
             loss.backward()
-            print('done the backward')
-            print()
+            #print('done the backward')
+            #print()
 
             self.train_loss['tot'].append(self.loss.loss_tot.item())
             self.train_loss['coord'].append(self.loss.loss_coord.item())
@@ -60,7 +60,7 @@ class TrainEngine(ln.engine.Engine):
         cls = mean(self.train_loss['cls'][-self.batch_subdivisions:])
         self.log(f'{self.batch} Loss:{tot:.5f} (Coord:{coord:.2f} Conf:{conf:.2f} Cls:{cls:.2f})')
 
-        print(tot)
+        #print(tot)
         if isinf(tot) or isnan(tot):
             log.error('Infinite loss')
             self.sigint = True

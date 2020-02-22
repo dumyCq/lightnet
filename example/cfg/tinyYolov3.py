@@ -8,8 +8,8 @@ params = ln.engine.HyperParameters(
     # Network
     class_label_map = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'],
     _input_dimension = (416, 416),
-    _batch_size = 128,
-    _mini_batch_size = 8,
+    _batch_size = 96,
+    _mini_batch_size = 12,
     _max_batches = 80200,
 
     # Dataset
@@ -39,7 +39,7 @@ params.loss = ln.network.loss.MultiScaleRegionLoss(
     params.network.anchors,
     params.network.stride,
     thresh = 0.8,
-    coord_scale = 0.001,
+    coord_scale = 0.01,
 )
 
 # Postprocessing

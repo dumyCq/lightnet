@@ -77,8 +77,8 @@ class MultiScaleRegionLoss(RegionLoss):
             
             loss_cpu = loss_temp.item()
             if numpy.isnan(loss_cpu):
-                #print('There is a nan gradient following, ignore it!')
-                #print(loss_temp)
+                print('There is a nan gradient following, ignore it!')
+                print(loss_temp)
             else:
                 #print('This is the one can be used')
                 #print(loss_temp)
@@ -91,8 +91,8 @@ class MultiScaleRegionLoss(RegionLoss):
         if loss_num == 0:
             loss_num = 1
         
-        print('this is loss')
-        print(loss)
+        #print('this is loss')
+        #print(loss)
         # Overwrite loss values with avg
         self.loss_coord = loss_coord / loss_num
         self.loss_conf = loss_conf / loss_num
