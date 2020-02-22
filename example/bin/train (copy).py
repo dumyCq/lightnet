@@ -29,12 +29,13 @@ class TrainEngine(ln.engine.Engine):
         data, target = data
         data = data.to(self.device)
 
-        #print(data.shape)
-        #print(self.network)
-        print(target.shape)
         out = self.network(data)
-        #loss = (self.loss(out[0], target) + self.loss(out[1], target)) / self.batch_subdivisions
-        loss = self.loss(out, target) / self.batch_subdivisions
+        #print(out[0].shape)
+        #print(out[1].shape)
+        #print(self.batch_subdivisions)
+        loss = torch.floor(self.loss(out, target)) / self.batch_subdivisions
+        print('this is loss:')
+        print(loss)
         loss.backward()
 
         self.train_loss['tot'].append(self.loss.loss_tot.item())
@@ -48,10 +49,37 @@ class TrainEngine(ln.engine.Engine):
         self.scheduler.step(self.batch, epoch=self.batch)
 
         # Get values from last batch
-        tot = mean(self.train_loss['tot'][-self.batch_subdivisions:])
-        coord = mean(self.train_loss['coord'][-self.batch_subdivisions:])
-        conf = mean(self.train_loss['conf'][-self.batch_subdivisions:])
-        cls = mean(self.train_loss['cls'][-self.batch_subdivisions:])
+        tot_from = self.train_loss['tot'][-self.batch_subdivisions:]
+        not_nan_indices=[]
+        count = 0
+        tot = 0
+        coord = 0
+        conf = 0
+        cls = 0
+        # print(type(tot_from))
+        for i in range(len(tot_from)):
+            if not np.isnan(tot_from[i]):
+                not_nan_indices.append(i)
+                count += 1
+                tot += self.train_loss['tot'][-self.batch_subdivisions:][i]
+                coord += self.train_loss['coord'][-self.batch_subdivisions:][i]
+                conf += self.train_loss['conf'][-self.batch_subdivisions:][i]
+                cls += self.train_loss['cls'][-self.batch_subdivisions:][i]
+        if count !=0:
+            tot /= count
+            coord /= count
+            conf /= count
+            cls /= count
+
+        print('this is nan_indices')
+        print(not_nan_indices)
+        print('this is loss')
+        print(tot_from)
+
+        # tot = mean(self.train_loss['tot'][-self.batch_subdivisions:])
+        # coord = mean(self.train_loss['coord'][-self.batch_subdivisions:])
+        # conf = mean(self.train_loss['conf'][-self.batch_subdivisions:])
+        # cls = mean(self.train_loss['cls'][-self.batch_subdivisions:])
         self.log(f'{self.batch} Loss:{tot:.5f} (Coord:{coord:.2f} Conf:{conf:.2f} Cls:{cls:.2f})')
 
         if isinf(tot) or isnan(tot):

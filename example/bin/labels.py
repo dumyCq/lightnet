@@ -11,8 +11,8 @@ import xml.etree.ElementTree as ET
 import brambox as bb
 
 TRAINSET = [
-    ('2012', 'train'),
-    ('2012', 'val'),
+    #('2012', 'train'),
+    #('2012', 'val'),
     ('2007', 'train'),
     ('2007', 'val'),
     ]

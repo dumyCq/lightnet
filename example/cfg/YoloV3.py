@@ -8,8 +8,8 @@ params = ln.engine.HyperParameters(
     # Network
     class_label_map = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'],
     _input_dimension = (416, 416),
-    _batch_size = 64,
-    _mini_batch_size = 8,
+    _batch_size = 32,
+    _mini_batch_size = 4,
     _max_batches = 80200,
 
     # Dataset
@@ -34,7 +34,7 @@ params.network = ln.models.YoloV3(len(params.class_label_map))
 params.network.apply(init_weights)
 
 # Loss
-params.loss = ln.network.loss.RegionLoss(
+params.loss = ln.network.loss.MultiScaleRegionLoss(
     len(params.class_label_map),
     params.network.anchors,
     params.network.stride,
@@ -42,7 +42,7 @@ params.loss = ln.network.loss.RegionLoss(
 
 # Postprocessing
 params._post = ln.data.transform.Compose([
-    ln.data.transform.GetBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.001),
+    ln.data.transform.GetMultiScaleBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.001),
     ln.data.transform.NonMaxSuppression(0.5),
     ln.data.transform.TensorToBrambox(params.input_dimension, params.class_label_map),
 ])

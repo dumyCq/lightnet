@@ -5,6 +5,7 @@
 
 import torch
 from . import RegionLoss
+import numpy
 
 __all__ = ['MultiScaleRegionLoss']
 
@@ -64,20 +65,37 @@ class MultiScaleRegionLoss(RegionLoss):
             self.seen = torch.tensor(seen)
 
         # Run loss at different scales and sum resulting loss values
+        loss_num = 0
+
         for i, out in enumerate(output):
             self.anchors = self._anchors[i]
             self.num_anchors = self.anchors.shape[0]
             self.anchor_step = self.anchors.shape[1]
             self.stride = self._stride[i]
 
-            loss += super().forward(out, target)
-            loss_coord += self.loss_coord
-            loss_conf += self.loss_conf
-            loss_cls += self.loss_cls
+            loss_temp = super().forward(out, target)
+            
+            loss_cpu = loss_temp.item()
+            if numpy.isnan(loss_cpu):
+                #print('There is a nan gradient following, ignore it!')
+                #print(loss_temp)
+            else:
+                #print('This is the one can be used')
+                #print(loss_temp)
+                loss_coord += self.loss_coord
+                loss_conf += self.loss_conf
+                loss_cls += self.loss_cls
+                loss += loss_temp
+                loss_num += 1
 
+        if loss_num == 0:
+            loss_num = 1
+        
+        print('this is loss')
+        print(loss)
         # Overwrite loss values with avg
-        self.loss_coord = loss_coord / len(output)
-        self.loss_conf = loss_conf / len(output)
-        self.loss_cls = loss_cls / len(output)
-        self.loss_tot = loss / len(output)
+        self.loss_coord = loss_coord / loss_num
+        self.loss_conf = loss_conf / loss_num
+        self.loss_cls = loss_cls / loss_num
+        self.loss_tot = loss / loss_num
         return self.loss_tot

@@ -140,6 +140,9 @@ class RegionLoss(nn.modules.loss._Loss):
             cls = cls[cls_mask].view(-1, nC)
 
         # Compute losses
+        if np.any(np.isnan(coord_mask.cpu().detach())):
+            coord_mask[torch.isnan(coord_mask)] = 0
+
         self.loss_coord = self.coord_scale * self.mse(coord*coord_mask, tcoord*coord_mask) / (2 * nB)
         self.loss_conf = self.mse(conf*conf_mask, tconf*conf_mask) / (2 * nB)
         if nC > 1:

@@ -8,14 +8,14 @@ params = ln.engine.HyperParameters(
     # Network
     class_label_map = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'],
     _input_dimension = (416, 416),
-    _batch_size = 64,
+    _batch_size = 128,
     _mini_batch_size = 8,
     _max_batches = 80200,
 
     # Dataset
     _train_set = 'train.h5',
     _test_set = 'test.h5',
-    #_filter_anno = 'ignore',
+    _filter_anno = 'ignore',
 
     # Data Augmentation
     _jitter = .3,
@@ -38,11 +38,13 @@ params.loss = ln.network.loss.MultiScaleRegionLoss(
     len(params.class_label_map),
     params.network.anchors,
     params.network.stride,
+    thresh = 0.8,
+    coord_scale = 0.001,
 )
 
 # Postprocessing
 params._post = ln.data.transform.Compose([
-    ln.data.transform.GetMultiScaleBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.0001),
+    ln.data.transform.GetMultiScaleBoundingBoxes(len(params.class_label_map), params.network.anchors, 0.001),
     ln.data.transform.NonMaxSuppression(0.5),
     ln.data.transform.TensorToBrambox(params.input_dimension, params.class_label_map),
 ]) 
@@ -50,7 +52,7 @@ params._post = ln.data.transform.Compose([
 # Optimizer
 params.optimizer = torch.optim.SGD(
     params.network.parameters(),
-    lr = .001,
+    lr = .0001,
     momentum = .9,
     weight_decay = .0005,
     dampening = 0,
